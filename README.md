@@ -4,8 +4,9 @@ this is a material animation for start activity,can use it below SDK LOLLIPOP
 ###GIF View ###
 * 1.material design
 * 2.sample
+<br/>
 <img src="./img/exp.gif" width = "300" height = "300"  />
-<img src="./img/pic.gif" width = "180" height = "300"  />
+<img src="./img/pic.gif" width = "185" height = "300"  />
 
 #### License ####
 
