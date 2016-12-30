@@ -94,8 +94,27 @@ public class TransitionsHeleper {
             return false;
         }
         targetView.setImageBitmap(null);
+
+        int[] position = new int[2];
+        targetView.getLocationOnScreen(position);
+        Log.d(TAG,"top:"+position[1]+",left:"+position[0]);
+        if (position[0] < -targetView.getWidth()) {
+            position[0] = 0;
+        }
+        if (position[1] < -targetView.getHeight()) {
+            position[1] = 0;
+        }
+        bean.targetPoint.set(position[0], position[1]);
+        bean.translationY = -(bean.originPoint.y + (int) (bean.targetHeight * bean.scale) / 2
+                - bean.targetPoint.y - bean.targetHeight / 2);
+        bean.translationX = -(bean.originPoint.x + bean.originWidth / 2 - bean.targetPoint.x - bean.targetWidth / 2);
+        bean.targetHeight = targetView.getHeight();
+        bean.scale =  1.0f*bean.originHeight/bean.targetHeight;
+
         bean.moveLayout.setVisibility(View.VISIBLE);
         View moveView = bean.moveLayout.getChildAt(0);
+        moveView.setTranslationX(bean.translationX);
+        moveView.setTranslationY(bean.translationY);
 
         moveMethod.back(bean, moveView, new ITransferView.OnShowListener() {
             @Override
@@ -186,14 +205,14 @@ public class TransitionsHeleper {
                 }
                 bean.scale =  1.0f*bean.originHeight/bean.targetHeight;
 
-                FrameLayout.LayoutParams moveParams = new FrameLayout.LayoutParams(bean.targetWidth, bean.targetHeight);
-                moveParams.setMargins(bean.targetPoint.x, bean.targetPoint.y-parent.getTop()-bean.statusBarHeight, 0, 0);
+                FrameLayout.LayoutParams moveParams = new FrameLayout.LayoutParams(bean.originWidth, bean.originHeight);
+                moveParams.setMargins(bean.originPoint.x, bean.originPoint.y-parent.getTop()-bean.statusBarHeight, 0, 0);
 
                 moveLayout.addView(moveView,moveParams);
                 bean.moveLayout = moveLayout;
-                bean.translationY = bean.originPoint.y + (int) (bean.targetHeight * bean.scale) / 2
-                        - bean.targetPoint.y - bean.targetHeight / 2;
-                bean.translationX = bean.originPoint.x + bean.originWidth / 2 - bean.targetPoint.x - bean.targetWidth / 2;
+                bean.translationY = -(bean.originPoint.y + (int) (bean.targetHeight * bean.scale) / 2
+                        - bean.targetPoint.y - bean.targetHeight / 2);
+                bean.translationX = -(bean.originPoint.x + bean.originWidth / 2 - bean.targetPoint.x - bean.targetWidth / 2);
 
                 Log.d(TAG,bean.toString());
 

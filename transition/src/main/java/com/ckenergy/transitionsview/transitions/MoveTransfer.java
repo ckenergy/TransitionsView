@@ -16,14 +16,14 @@ public class MoveTransfer implements ITransferView {
 
     private long duration;
 
-    AnimatorSet startSet;
+    private AnimatorSet startSet;
 
-    ObjectAnimator translationX;
-    ObjectAnimator translationY;
-    ObjectAnimator scaleX;
-    ObjectAnimator scaleY;
+    private ObjectAnimator translationX;
+    private ObjectAnimator translationY;
+    private ObjectAnimator scaleX;
+    private ObjectAnimator scaleY;
 
-    Animator.AnimatorListener startListener;
+    private Animator.AnimatorListener startListener;
 
     public MoveTransfer() {
         duration = 300;
@@ -31,10 +31,10 @@ public class MoveTransfer implements ITransferView {
 
     @Override
     public void start(MoveInfo bean, View child, final OnShowListener listener) {
-        translationX = ObjectAnimator.ofFloat(child, "translationX", bean.translationX, 0);
-        translationY = ObjectAnimator.ofFloat(child, "translationY", bean.translationY, 0);
-        scaleX = ObjectAnimator.ofFloat(child, "scaleX", bean.scale, 1);
-        scaleY = ObjectAnimator.ofFloat(child, "scaleY", bean.scale, 1);
+        translationX = ObjectAnimator.ofFloat(child, "translationX", 0, bean.translationX);
+        translationY = ObjectAnimator.ofFloat(child, "translationY", 0, bean.translationY);
+        scaleX = ObjectAnimator.ofFloat(child, "scaleX", 1, 1.0f/bean.scale);
+        scaleY = ObjectAnimator.ofFloat(child, "scaleY", 1, 1.0f/bean.scale);
         translationY.setInterpolator(new AccelerateInterpolator());
         List<Animator> animators = new ArrayList<>();
         animators.add(translationX);
@@ -71,17 +71,22 @@ public class MoveTransfer implements ITransferView {
         if (startSet == null) {
             return;
         }
-        startSet.cancel();
-        Float x = (Float) translationX.getAnimatedValue();
-        Float y = (Float) translationY.getAnimatedValue();
+        float x = (Float) translationX.getAnimatedValue();
+        float y = (Float) translationY.getAnimatedValue();
         Float scaleXF = (Float) scaleX.getAnimatedValue();
         Float scaleYF = (Float) scaleY.getAnimatedValue();
+        if (!startSet.isRunning()) {
+            x = bean.translationX;
+            y = bean.translationY;
+            scaleXF = scaleYF = 1.0f/bean.scale;
+        }
+        startSet.cancel();
 
         translationY.setInterpolator(new DecelerateInterpolator());
-        translationX.setFloatValues(x, bean.translationX);
-        translationY.setFloatValues(y, bean.translationY);
-        scaleX.setFloatValues(scaleXF, bean.scale);
-        scaleY.setFloatValues(scaleYF, bean.scale);
+        translationX.setFloatValues(x, 0);
+        translationY.setFloatValues(y, 0);
+        scaleX.setFloatValues(scaleXF, 1);
+        scaleY.setFloatValues(scaleYF, 1);
 
         startSet.removeListener(startListener);
         if (listener != null) {

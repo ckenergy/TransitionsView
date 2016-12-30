@@ -3,4 +3,27 @@
 
     <string name="title">This is an activity animation</string>
 
+    <string name="large_text">我们在App的cache目录下创建了一个子目录okhttp，\n\n
+        将其作为Okhttp专门用于缓存的目录，并设置其上限为10M，Okhttp需要能够读写该目录。\n\n
+        不要让多个缓存实例同时访问同一个缓存目录，因为多个缓存实例会相互影响，导致出错，甚至系统崩溃。\n\n
+        在绝大多数的App中，我们只应该执行一次new OkHttpClient()，将其作为全局的实例进行保存，从而在App的各处都只使用这一个实例对象，\n\n
+        这样所有的HTTP请求都可以共用Response缓存。\n\n
+        上面代码，我们对于同一个URL，我们先后发送了两个HTTP请求。\n\n
+        第一次请求完成后，Okhttp将请求到的结果写入到了缓存目录中，进行了缓存。\n\n
+        response1.networkResponse()返回了实际的数据，response1.cacheResponse()返回了null，\n\n
+        这说明第一次HTTP请求的得到的响应是通过发送实际的网络请求，而不是来自于缓存。然后对同一个URL进行了第二次HTTP请求，\n\n
+        response2.networkResponse()返回了null，response2.cacheResponse()返回了缓存数据，\n\n
+        这说明第二次HTTP请求得到的响应来自于缓存，而不是网络请求。\n\n
+        我们在App的cache目录下创建了一个子目录okhttp，\n\n
+        将其作为Okhttp专门用于缓存的目录，并设置其上限为10M，Okhttp需要能够读写该目录。\n\n
+        不要让多个缓存实例同时访问同一个缓存目录，因为多个缓存实例会相互影响，导致出错，甚至系统崩溃。\n\n
+        在绝大多数的App中，我们只应该执行一次new OkHttpClient()，将其作为全局的实例进行保存，从而在App的各处都只使用这一个实例对象，\n\n
+        这样所有的HTTP请求都可以共用Response缓存。\n\n
+        上面代码，我们对于同一个URL，我们先后发送了两个HTTP请求。\n\n
+        第一次请求完成后，Okhttp将请求到的结果写入到了缓存目录中，进行了缓存。\n\n
+        response1.networkResponse()返回了实际的数据，response1.cacheResponse()返回了null，\n\n
+        这说明第一次HTTP请求的得到的响应是通过发送实际的网络请求，而不是来自于缓存。然后对同一个URL进行了第二次HTTP请求，\n\n
+        response2.networkResponse()返回了null，response2.cacheResponse()返回了缓存数据，\n\n
+        这说明第二次HTTP请求得到的响应来自于缓存，而不是网络请求.</string>
+
 </resources>
