@@ -1,4 +1,4 @@
-package com.ckenergy.transitionsview.sample;
+package com.ckenergy.transitionsview.transitions;
 
 import android.app.Activity;
 import android.support.v7.app.AppCompatActivity;
@@ -6,17 +6,13 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.ImageView;
 
-import com.ckenergy.transitionsview.transitions.ITransferView;
-import com.ckenergy.transitionsview.transitions.MoveTransfer;
-import com.ckenergy.transitionsview.transitions.TransitionsHeleper;
 
+public class BaseTransitionActivity extends AppCompatActivity {
 
-public class BaseActivity extends AppCompatActivity {
-
-    MoveTransfer showMethod = new MoveTransfer();
-    ImageView moveView;
-    String tag;
-    ITransferView.OnShowListener back;
+    private ImageView moveView;
+    private String tag;
+    private ITransferView.OnShowListener back;
+    private MoveTransfer showMethod = new MoveTransfer();
 
     public void startMove(Activity activity, ImageView view, ITransferView.OnShowListener listener) {
         this.moveView = view;

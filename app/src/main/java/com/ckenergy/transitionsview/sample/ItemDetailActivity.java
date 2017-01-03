@@ -3,9 +3,10 @@ package com.ckenergy.transitionsview.sample;
 import android.os.Bundle;
 import android.widget.ImageView;
 
+import com.ckenergy.transitionsview.transitions.BaseTransitionActivity;
 import com.ckenergy.transitionsview.transitions.ITransferView;
 
-public class ItemDetailActivity extends BaseActivity {
+public class ItemDetailActivity extends BaseTransitionActivity {
 
     ImageView imageView;
 
