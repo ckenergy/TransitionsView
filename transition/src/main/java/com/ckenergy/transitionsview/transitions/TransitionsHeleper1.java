@@ -4,8 +4,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
@@ -18,26 +21,26 @@ import android.widget.RelativeLayout;
 
 import java.util.HashMap;
 
-public class TransitionsHeleper {
+public class TransitionsHeleper1 {
 
-    private final String TAG = getClass().getSimpleName();
+    private static final String TAG = "TransitionsHeleper";
 
     public static final String TRANSITION_FLAG = "transition";
 
     public static final int TRANSITION_TYPE = 1;
 
-    private static TransitionsHeleper INSTANCE;
+    private static TransitionsHeleper1 INSTANCE;
 
     private static HashMap<String, MoveInfo> staticMap = new HashMap<>();
 
-    private TransitionsHeleper() {
+    private TransitionsHeleper1() {
     }
 
-    public static TransitionsHeleper getInstance() {
+    public static TransitionsHeleper1 getInstance() {
         if (INSTANCE == null) {
-            synchronized (TransitionsHeleper.class) {
+            synchronized (TransitionsHeleper1.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new TransitionsHeleper();
+                    INSTANCE = new TransitionsHeleper1();
                 }
             }
         }
@@ -76,12 +79,34 @@ public class TransitionsHeleper {
                 bean.originWidth = view.getWidth();
                 bean.originHeight = view.getHeight();
                 bean.bitmap = createBitmap(view, bean.originWidth, bean.originHeight, false);
+                if (view instanceof ImageView) {
+                    ImageView imageView = (ImageView) view;
+                    bean.scaleType = imageView.getScaleType();
+                    bean.realBitmap = drawableToBitamp(imageView.getDrawable());
+                    Log.d(TAG, "bitmap size:"+bean.realBitmap.getWidth()+"X"+bean.realBitmap.getHeight());
+                }else {
+                    bean.scaleType = ImageView.ScaleType.FIT_CENTER;
+                    bean.realBitmap = bean.bitmap;
+                }
                 finalIntent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
                 staticMap.put(finalIntent.getComponent().getClassName(), bean);
                 activity.startActivity(finalIntent);
                 activity.overridePendingTransition(0, 0);
             }
         });
+    }
+
+    private static Bitmap drawableToBitamp(Drawable drawable) {
+        Bitmap bitmap;
+        int w = drawable.getIntrinsicWidth();
+        int h = drawable.getIntrinsicHeight();
+        Bitmap.Config config = drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565;
+        bitmap = Bitmap.createBitmap(w,h,config);
+        //注意，下面三行代码要用到，否在在View或者surfaceview里的canvas.drawBitmap会看不到图
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, w, h);
+        drawable.draw(canvas);
+        return bitmap;
     }
 
     public boolean back(ITransferView moveMethod, final String tag, final ImageView targetView) {
@@ -135,28 +160,6 @@ public class TransitionsHeleper {
         return true;
     }
 
-    /*public boolean backMove(final ImageView imageView) {
-        if (imageView == null) {
-            return false;
-        }
-        if (!(imageView.getContext() instanceof Activity)) {
-            return false;
-        }
-        final Activity activity = (Activity) imageView.getContext();
-        IMoveMethod.OnShowListener back = new IMoveMethod.OnShowListener() {
-            @Override public void onStart() {}
-
-            @Override
-            public void onEnd() {
-                activity.finish();
-                activity.overridePendingTransition(0,0);
-            }
-        };
-        boolean isfinish = TransitionsHeleper.getInstance().back(this.getClass().getName(), imageView, back);
-
-        return isfinish;
-    }*/
-
     public void show(ITransferView moveMethod, final Activity activity, final ImageView targetView) {
         show(moveMethod, activity, targetView, null);
     }
@@ -182,6 +185,7 @@ public class TransitionsHeleper {
                 bean.statusBarHeight = 0;
             }
         }
+
         targetView.post(new Runnable() {
             @Override
             public void run() {
@@ -195,16 +199,124 @@ public class TransitionsHeleper {
                 bean.targetPoint.set(rect.left, rect.top);
                 bean.targetWidth = rect.width();
                 bean.targetHeight = rect.height();
-                targetView.getScaleType();
                 ImageView moveView = new ImageView(activity);
+                final ImageView.ScaleType scaleType = targetView.getScaleType();
+                if (scaleType == ImageView.ScaleType.CENTER) {
+                    if (bean.scaleType == ImageView.ScaleType.CENTER) {
+                        bean.targetPoint.set(rect.left+(bean.targetWidth-bean.originWidth)/2,  rect.top+(bean.targetHeight-bean.originHeight)/2);
+                        bean.targetWidth = bean.originWidth;
+                        bean.targetHeight = bean.originHeight;
+                    }else if (bean.scaleType == ImageView.ScaleType.FIT_CENTER) {
+                        if (bean.originHeight*bean.realBitmap.getWidth() > bean.originWidth*bean.realBitmap.getHeight()) {
+                            bean.scale = 1.0f*bean.originWidth/bean.realBitmap.getWidth();
+                        }else {
+                            bean.scale = 1.0f*bean.originHeight/bean.realBitmap.getHeight();
+                        }
+
+                        int targetWidth = (int) (bean.originHeight/bean.scale);
+                        int targetHeight = (int) (bean.originWidth/bean.scale);
+
+                        bean.targetPoint.set(rect.left+(bean.targetWidth-targetWidth)/2,  rect.top+(bean.targetHeight-targetHeight)/2);
+                        bean.targetWidth = targetWidth;
+                        bean.targetHeight = targetHeight;
+
+                        Log.d(TAG, bean.toString());
+
+                    }else if (bean.scaleType == ImageView.ScaleType.CENTER_CROP){
+                        if (bean.originHeight*bean.realBitmap.getWidth() > bean.originWidth*bean.realBitmap.getHeight()) {
+                            bean.scale = 1.0f*bean.originHeight/bean.realBitmap.getHeight();
+                        }else {
+                            bean.scale = 1.0f*bean.originWidth/bean.realBitmap.getWidth();
+                        }
+
+                        Log.d(TAG, bean.toString());
+                        int targetWidth = (int) (bean.originHeight/bean.scale);
+                        int targetHeight = (int) (bean.originWidth/bean.scale);
+
+                        Log.d(TAG, bean.toString());
+                        bean.targetPoint.set(rect.left+(bean.targetWidth-targetWidth)/2,  rect.top+(bean.targetHeight-targetHeight)/2);
+                        bean.targetWidth = targetWidth;
+                        bean.targetHeight = targetHeight;
+                    }else if (bean.scaleType == ImageView.ScaleType.FIT_START){
+                        int left = 0;
+                        int top = 0;
+                        if (bean.originHeight*bean.realBitmap.getWidth() > bean.originWidth*bean.realBitmap.getHeight()) {
+                            bean.scale = 1.0f*bean.originWidth/bean.realBitmap.getWidth();
+                            top = rect.top+(bean.targetHeight-bean.realBitmap.getHeight())/2;
+                        }else {
+                            left = rect.left+(bean.targetWidth-bean.realBitmap.getWidth())/2;
+                            bean.scale = 1.0f*bean.originHeight/bean.realBitmap.getHeight();
+                        }
+
+                        int targetWidth = (int) (bean.originHeight/bean.scale);
+                        int targetHeight = (int) (bean.originWidth/bean.scale);
+                        if (left <= 0) {
+                            left = rect.left+(bean.targetWidth-targetWidth)/2;
+                        }else {
+                            top = rect.top+(bean.targetHeight-targetHeight)/2;
+                        }
+
+                        bean.targetPoint.set(left,  top);
+                        bean.targetWidth = targetWidth;
+                        bean.targetHeight = targetHeight;
+                    }else if (bean.scaleType == ImageView.ScaleType.FIT_END) {
+                        int left = 0;
+                        int top = 0;
+                        boolean isWidth;
+                        if (bean.originHeight*bean.realBitmap.getWidth() > bean.originWidth*bean.realBitmap.getHeight()) {
+                            bean.scale = 1.0f*bean.originWidth/bean.realBitmap.getWidth();
+                            isWidth = true;
+                        }else {
+                            isWidth = false;
+                            bean.scale = 1.0f*bean.originHeight/bean.realBitmap.getHeight();
+                        }
+
+                        int targetWidth = (int) (bean.originHeight/bean.scale);
+                        int targetHeight = (int) (bean.originWidth/bean.scale);
+                        if (isWidth) {
+                            top = rect.top+(bean.targetHeight-targetHeight-(targetHeight-bean.realBitmap.getHeight()))/2;
+                        }else {
+                            left = rect.left+(bean.targetWidth-targetWidth - (targetWidth - bean.realBitmap.getWidth()))/2;
+                        }
+
+                        if (left <= 0) {
+                            left = rect.left+(bean.targetWidth-targetWidth)/2;
+                        }else {
+                            top = rect.top+(bean.targetHeight-targetHeight)/2;
+                        }
+
+                        bean.targetPoint.set(left,  top);
+                        bean.targetWidth = targetWidth;
+                        bean.targetHeight = targetHeight;
+                    }else if (bean.scaleType == ImageView.ScaleType.CENTER_INSIDE) {
+                        if (bean.originHeight*bean.realBitmap.getWidth() > bean.originWidth*bean.realBitmap.getHeight()) {
+                            bean.scale = 1.0f*bean.originWidth/bean.realBitmap.getWidth();
+                        }else {
+                            bean.scale = 1.0f*bean.originHeight/bean.realBitmap.getHeight();
+                        }
+
+                        int targetWidth = (int) (bean.originHeight/bean.scale);
+                        int targetHeight = (int) (bean.originWidth/bean.scale);
+
+                        bean.targetPoint.set(rect.left+(bean.targetWidth-targetWidth)/2,  rect.top+(bean.targetHeight-targetHeight)/2);
+                        bean.targetWidth = targetWidth;
+                        bean.targetHeight = targetHeight;
+
+                        Log.d(TAG, bean.toString());
+
+                    }
+                }
+                moveView.setScaleType(bean.scaleType);
                 if (bean.bitmap != null) {
                     moveView.setImageDrawable(new BitmapDrawable(activity.getResources(), bean.bitmap));
                     /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                     } else {
-                        moveView.setImageDrawable(new BitmapDrawable(bean.bitmap));
+                        moveView.setBackgroundDrawable(new BitmapDrawable(bean.bitmap));
                     }*/
                 }
-                bean.scale =  1.0f*bean.originHeight/bean.targetHeight;
+                if (bean.scale <= 0) {
+                    bean.scale =  1.0f*bean.originHeight/bean.targetHeight;
+                }
 
                 FrameLayout.LayoutParams moveParams = new FrameLayout.LayoutParams(bean.originWidth, bean.originHeight);
                 moveParams.setMargins(bean.originPoint.x, bean.originPoint.y-parent.getTop()-bean.statusBarHeight, 0, 0);
@@ -215,12 +327,12 @@ public class TransitionsHeleper {
                         - bean.targetPoint.y - bean.targetHeight / 2);
                 bean.translationX = -(bean.originPoint.x + bean.originWidth / 2 - bean.targetPoint.x - bean.targetWidth / 2);
 
-                Log.d(TAG,bean.toString());
+                Log.d(TAG, bean.toString());
 
                 float scale = bean.scale;
 
-                moveView.setScaleX(scale);
-                moveView.setScaleY(scale);
+//                moveView.setScaleX(scale);
+//                moveView.setScaleY(scale);
                 moveView.setTranslationX(bean.translationX);
                 moveView.setTranslationY(bean.translationY);
 
@@ -234,11 +346,11 @@ public class TransitionsHeleper {
 
                     @Override
                     public void onEnd() {
+                        targetView.setImageBitmap(bean.bitmap);
+                        moveLayout.setVisibility(View.GONE);
                         if (listener != null) {
                             listener.onEnd();
                         }
-                        targetView.setImageBitmap(bean.bitmap);
-                        moveLayout.setVisibility(View.GONE);
                     }
                 });
 
