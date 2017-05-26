@@ -5,6 +5,7 @@ import android.view.View;
 import android.widget.ImageView;
 
 import com.ckenergy.transitionsview.transitions.TransitionsHeleper;
+import com.ckenergy.transitionsview.transitions.TransitionsHeleper1;
 import com.zhy.adapter.recyclerview.CommonAdapter;
 import com.zhy.adapter.recyclerview.base.ViewHolder;
 
