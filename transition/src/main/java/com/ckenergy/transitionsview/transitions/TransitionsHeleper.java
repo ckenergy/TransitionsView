@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
@@ -20,7 +22,7 @@ import java.util.HashMap;
 
 public class TransitionsHeleper {
 
-    private final String TAG = getClass().getSimpleName();
+    private final static String TAG = "TransitionsHeleper";
 
     public static final String TRANSITION_FLAG = "transition";
 
@@ -75,6 +77,32 @@ public class TransitionsHeleper {
                 bean.originPoint.set(rect.left, rect.top);
                 bean.originWidth = view.getWidth();
                 bean.originHeight = view.getHeight();
+                if (view instanceof ImageView) {
+                    Log.d(TAG, "imageview");
+                    ImageView imageView = (ImageView) view;
+                    Drawable drawable = imageView.getDrawable();
+                    Bitmap bitmap = null;// = BitmapFactory.decodeResource(context.getResources(), R.drawable.fee_exp);
+//                    bean.bitmap = bitmap;
+                    bitmap = drawable2BitmapWithType(drawable);
+                    if (bitmap != null) {
+                        Log.d(TAG, "image:"+bitmap.getConfig().toString());
+                        Log.d(TAG, "width:"+bitmap.getWidth()+",height:"+bitmap.getHeight());
+                        double f = Math.abs(1.0*bitmap.getWidth()/bitmap.getHeight() - 1.0*bean.originWidth/bean.originHeight);
+                        Log.d(TAG, "f:"+f);
+                        if (0.05 > f) {
+                            bean.bitmap = bitmap;
+                        }
+                    }
+                    if (imageView.getScaleType() == ImageView.ScaleType.FIT_XY) {
+
+                    }
+                }
+                if (bean.bitmap == null) {
+                    bean.bitmap = createBitmap(view, bean.originWidth, bean.originHeight, false);
+//                    Log.d(TAG, "width:"+bean.bitmap.getWidth()+",height:"+bean.bitmap.getHeight());
+                }else {
+//                    Log.d(TAG, "bitmap not null");
+                }
                 bean.bitmap = createBitmap(view, bean.originWidth, bean.originHeight, false);
                 finalIntent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
                 staticMap.put(finalIntent.getComponent().getClassName(), bean);
@@ -82,6 +110,36 @@ public class TransitionsHeleper {
                 activity.overridePendingTransition(0, 0);
             }
         });
+    }
+
+    public static Bitmap drawable2BitmapWithType(Drawable drawable) {
+        Bitmap bitmap = null;
+        Log.d(TAG, drawable.getClass().getName());
+        if (drawable instanceof BitmapDrawable ) {
+            Log.d(TAG, "bitmapdrawable");
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+            bitmap = Bitmap.createBitmap(bitmapDrawable.getBitmap());
+        }/*else if (drawable instanceof GlideBitmapDrawable) { //todo Glide need fix
+            GlideBitmapDrawable glideBitmapDrawable = (GlideBitmapDrawable) drawable;
+            bitmap = glideBitmapDrawable.getBitmap();
+        }*/else if (drawable instanceof TransitionDrawable) {
+            TransitionDrawable transitionDrawable = (TransitionDrawable) drawable;
+            int number = transitionDrawable.getNumberOfLayers();
+            Log.d(TAG, "number:" +number);
+            Drawable drawable1;
+            if (number < 1) {
+                drawable1 = transitionDrawable.getDrawable(0);
+            }else {
+                drawable1 = transitionDrawable.getDrawable(1);
+            }
+            if (drawable1 != null) {
+                Log.d(TAG, "drawable1:"+drawable1.getClass().getName());
+                bitmap = drawable2BitmapWithType(drawable1);
+            }else {
+                Log.d(TAG, "drawable1 is null");
+            }
+        }
+        return bitmap;
     }
 
     public boolean back(ITransferView moveMethod, final String tag, final ImageView targetView) {
