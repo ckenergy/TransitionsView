@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -81,27 +83,13 @@ public class TransitionsHeleper {
                     Log.d(TAG, "imageview");
                     ImageView imageView = (ImageView) view;
                     Drawable drawable = imageView.getDrawable();
-                    Bitmap bitmap = null;// = BitmapFactory.decodeResource(context.getResources(), R.drawable.fee_exp);
-//                    bean.bitmap = bitmap;
-                    bitmap = drawable2BitmapWithType(drawable);
-                    if (bitmap != null) {
-                        Log.d(TAG, "image:"+bitmap.getConfig().toString());
-                        Log.d(TAG, "width:"+bitmap.getWidth()+",height:"+bitmap.getHeight());
-                        double f = Math.abs(1.0*bitmap.getWidth()/bitmap.getHeight() - 1.0*bean.originWidth/bean.originHeight);
-                        Log.d(TAG, "f:"+f);
-                        if (0.05 > f) {
-                            bean.bitmap = bitmap;
-                        }
-                    }
-                    if (imageView.getScaleType() == ImageView.ScaleType.FIT_XY) {
-
-                    }
+                    bean.bitmap = drawable2Bitamp(drawable);//drawable2BitmapWithType(drawable);
                 }
                 if (bean.bitmap == null) {
                     bean.bitmap = createBitmap(view, bean.originWidth, bean.originHeight, false);
-//                    Log.d(TAG, "width:"+bean.bitmap.getWidth()+",height:"+bean.bitmap.getHeight());
+                    Log.d(TAG, "width:"+bean.bitmap.getWidth()+",height:"+bean.bitmap.getHeight());
                 }else {
-//                    Log.d(TAG, "bitmap not null");
+                    Log.d(TAG, "bitmap not null");
                 }
                 bean.bitmap = createBitmap(view, bean.originWidth, bean.originHeight, false);
                 finalIntent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
@@ -110,6 +98,25 @@ public class TransitionsHeleper {
                 activity.overridePendingTransition(0, 0);
             }
         });
+    }
+
+    private static Bitmap drawable2Bitamp(Drawable drawable) {
+        Bitmap bitmap;
+        int w = drawable.getIntrinsicWidth();
+        int h = drawable.getIntrinsicHeight();
+        Log.d(TAG, "drawable width:"+w+",height:"+h);
+        Bitmap.Config config =
+                drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888
+                        : Bitmap.Config.RGB_565;
+        bitmap = Bitmap.createBitmap(w,h,config);
+        //注意，下面三行代码要用到，否在在View或者surfaceview里的canvas.drawBitmap会看不到图
+        Canvas canvas = new Canvas(bitmap);
+        final Rect rect = drawable.copyBounds();
+        Log.d(TAG, rect.toString());
+        drawable.setBounds(0, 0, w, h);
+        drawable.draw(canvas);
+        drawable.setBounds(rect);//设置回原来的，不然图片会以左上角为起点显示图片本身的尺寸，scaleType无效
+        return bitmap;
     }
 
     public static Bitmap drawable2BitmapWithType(Drawable drawable) {
@@ -193,28 +200,6 @@ public class TransitionsHeleper {
         return true;
     }
 
-    /*public boolean backMove(final ImageView imageView) {
-        if (imageView == null) {
-            return false;
-        }
-        if (!(imageView.getContext() instanceof Activity)) {
-            return false;
-        }
-        final Activity activity = (Activity) imageView.getContext();
-        IMoveMethod.OnShowListener back = new IMoveMethod.OnShowListener() {
-            @Override public void onStart() {}
-
-            @Override
-            public void onEnd() {
-                activity.finish();
-                activity.overridePendingTransition(0,0);
-            }
-        };
-        boolean isfinish = TransitionsHeleper.getInstance().back(this.getClass().getName(), imageView, back);
-
-        return isfinish;
-    }*/
-
     public void show(ITransferView moveMethod, final Activity activity, final ImageView targetView) {
         show(moveMethod, activity, targetView, null);
     }
@@ -292,11 +277,11 @@ public class TransitionsHeleper {
 
                     @Override
                     public void onEnd() {
+                        targetView.setImageBitmap(bean.bitmap);
+                        moveLayout.setVisibility(View.GONE);
                         if (listener != null) {
                             listener.onEnd();
                         }
-                        targetView.setImageBitmap(bean.bitmap);
-                        moveLayout.setVisibility(View.GONE);
                     }
                 });
 
