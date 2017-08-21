@@ -26,7 +26,7 @@ public class MoveTransfer implements ITransferView {
     private Animator.AnimatorListener startListener;
 
     public MoveTransfer() {
-        duration = 1500;
+        duration = 500;
     }
 
     @Override

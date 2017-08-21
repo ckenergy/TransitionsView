@@ -79,19 +79,21 @@ public class TransitionsHeleper {
                 bean.originPoint.set(rect.left, rect.top);
                 bean.originWidth = view.getWidth();
                 bean.originHeight = view.getHeight();
+                bean.scaleType = ImageView.ScaleType.FIT_XY;
                 if (view instanceof ImageView) {
                     Log.d(TAG, "imageview");
                     ImageView imageView = (ImageView) view;
                     Drawable drawable = imageView.getDrawable();
-                    bean.bitmap = drawable2Bitamp(drawable);//drawable2BitmapWithType(drawable);
+                    bean.bitmap = drawableToBitamp(drawable);
+                    bean.scaleType = imageView.getScaleType();
+
                 }
                 if (bean.bitmap == null) {
                     bean.bitmap = createBitmap(view, bean.originWidth, bean.originHeight, false);
-                    Log.d(TAG, "width:"+bean.bitmap.getWidth()+",height:"+bean.bitmap.getHeight());
+//                    Log.d(TAG, "width:"+bean.bitmap.getWidth()+",height:"+bean.bitmap.getHeight());
                 }else {
-                    Log.d(TAG, "bitmap not null");
+//                    Log.d(TAG, "bitmap not null");
                 }
-                bean.bitmap = createBitmap(view, bean.originWidth, bean.originHeight, false);
                 finalIntent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
                 staticMap.put(finalIntent.getComponent().getClassName(), bean);
                 activity.startActivity(finalIntent);
@@ -100,36 +102,17 @@ public class TransitionsHeleper {
         });
     }
 
-    private static Bitmap drawable2Bitamp(Drawable drawable) {
-        Bitmap bitmap;
-        int w = drawable.getIntrinsicWidth();
-        int h = drawable.getIntrinsicHeight();
-        Log.d(TAG, "drawable width:"+w+",height:"+h);
-        Bitmap.Config config =
-                drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888
-                        : Bitmap.Config.RGB_565;
-        bitmap = Bitmap.createBitmap(w,h,config);
-        //注意，下面三行代码要用到，否在在View或者surfaceview里的canvas.drawBitmap会看不到图
-        Canvas canvas = new Canvas(bitmap);
-        final Rect rect = drawable.copyBounds();
-        Log.d(TAG, rect.toString());
-        drawable.setBounds(0, 0, w, h);
-        drawable.draw(canvas);
-        drawable.setBounds(rect);//设置回原来的，不然图片会以左上角为起点显示图片本身的尺寸，scaleType无效
-        return bitmap;
-    }
-
     public static Bitmap drawable2BitmapWithType(Drawable drawable) {
         Bitmap bitmap = null;
         Log.d(TAG, drawable.getClass().getName());
-        if (drawable instanceof BitmapDrawable ) {
+        if (drawable instanceof BitmapDrawable) {
             Log.d(TAG, "bitmapdrawable");
             BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
             bitmap = Bitmap.createBitmap(bitmapDrawable.getBitmap());
-        }/*else if (drawable instanceof GlideBitmapDrawable) { //todo Glide need fix
+        }/*else if (drawable instanceof GlideBitmapDrawable) { // 当有占位图时glide会使用这个
             GlideBitmapDrawable glideBitmapDrawable = (GlideBitmapDrawable) drawable;
             bitmap = glideBitmapDrawable.getBitmap();
-        }*/else if (drawable instanceof TransitionDrawable) {
+        }*/else if (drawable instanceof TransitionDrawable) { //当有占位图时glide会使用这个
             TransitionDrawable transitionDrawable = (TransitionDrawable) drawable;
             int number = transitionDrawable.getNumberOfLayers();
             Log.d(TAG, "number:" +number);
@@ -141,7 +124,7 @@ public class TransitionsHeleper {
             }
             if (drawable1 != null) {
                 Log.d(TAG, "drawable1:"+drawable1.getClass().getName());
-                bitmap = drawable2BitmapWithType(drawable1);
+//                bitmap = drawable2BitmapWithType(drawable1);
             }else {
                 Log.d(TAG, "drawable1 is null");
             }
@@ -240,25 +223,27 @@ public class TransitionsHeleper {
                 bean.targetHeight = rect.height();
                 targetView.getScaleType();
                 ImageView moveView = new ImageView(activity);
-                if (bean.bitmap != null) {
-                    moveView.setImageDrawable(new BitmapDrawable(activity.getResources(), bean.bitmap));
-                    /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                    } else {
-                        moveView.setImageDrawable(new BitmapDrawable(bean.bitmap));
-                    }*/
-                }
+
                 bean.scale =  1.0f*bean.originHeight/bean.targetHeight;
 
                 FrameLayout.LayoutParams moveParams = new FrameLayout.LayoutParams(bean.originWidth, bean.originHeight);
                 moveParams.setMargins(bean.originPoint.x, bean.originPoint.y-parent.getTop()-bean.statusBarHeight, 0, 0);
 
-                moveLayout.addView(moveView,moveParams);
+                moveLayout.addView(moveView, moveParams);
+                moveView.setScaleType(bean.scaleType);
+                if (bean.bitmap != null) {
+                    moveView.setImageBitmap(bean.bitmap);
+                    /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                    } else {
+                        moveView.setImageDrawable(new BitmapDrawable(bean.bitmap));
+                    }*/
+                }
                 bean.moveLayout = moveLayout;
                 bean.translationY = -(bean.originPoint.y + (int) (bean.targetHeight * bean.scale) / 2
                         - bean.targetPoint.y - bean.targetHeight / 2);
                 bean.translationX = -(bean.originPoint.x + bean.originWidth / 2 - bean.targetPoint.x - bean.targetWidth / 2);
 
-                Log.d(TAG,bean.toString());
+                Log.d(TAG, bean.toString());
 
                 float scale = bean.scale;
 
@@ -290,9 +275,11 @@ public class TransitionsHeleper {
     }
 
     public static void unBind(String tag) {
+        Log.d(TAG, "unBind");
         if (staticMap.get(tag) != null) {
             MoveInfo bean = staticMap.get(tag);
             if (bean != null) {
+                bean.bitmap.recycle();
                 bean.bitmap = null;
                 bean.moveLayout = null;
                 staticMap.remove(tag);
@@ -300,6 +287,26 @@ public class TransitionsHeleper {
         }
     }
 
+
+    public static Bitmap drawableToBitamp(Drawable drawable) {
+        Bitmap bitmap;
+        int w = drawable.getIntrinsicWidth();
+        int h = drawable.getIntrinsicHeight();
+        Log.d(TAG, "drawable width:"+w+",height:"+h);
+        Bitmap.Config config =
+                     drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888
+                     : Bitmap.Config.RGB_565;
+        bitmap = Bitmap.createBitmap(w, h, config);
+        Log.d(TAG, config.toString());
+        //注意，下面三行代码要用到，否在在View或者surfaceview里的canvas.drawBitmap会看不到图
+        Canvas canvas = new Canvas(bitmap);
+        final Rect rect = drawable.copyBounds();
+        Log.d(TAG, rect.toString());
+        drawable.setBounds(0, 0, w, h);
+        drawable.draw(canvas);
+        drawable.setBounds(rect);
+        return bitmap;
+    }
 
     private static Bitmap createBitmap(View view, int width, int height, boolean needOnLayout) {
         Bitmap bitmap = null;
@@ -334,6 +341,7 @@ public class TransitionsHeleper {
                         new RuntimeException());
                 return null;
             }
+            Log.d(TAG, cacheBitmap.getConfig().toString());
             bitmap = Bitmap.createBitmap(cacheBitmap);
             // Restore the view
             view.setAlpha(alpha);

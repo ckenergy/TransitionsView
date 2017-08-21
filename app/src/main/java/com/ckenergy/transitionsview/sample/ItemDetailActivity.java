@@ -23,7 +23,7 @@ public class ItemDetailActivity extends BaseTransitionActivity {
 
             @Override
             public void onEnd() {
-                imageView.setImageResource(R.mipmap.bg_rv1);
+                imageView.setImageResource(R.mipmap.bg_rv);
             }
         });
     }

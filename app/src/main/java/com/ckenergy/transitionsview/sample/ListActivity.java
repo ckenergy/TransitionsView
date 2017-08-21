@@ -23,7 +23,7 @@ public class ListActivity extends AppCompatActivity {
         rv = (RecyclerView) findViewById(R.id.rv);
         mList = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            mList.add(R.mipmap.bg_rv1);
+            mList.add(R.mipmap.bg_rv);
         }
         mAdapter = new MyAdapter(this, R.layout.item_rv, mList);
         rv.setLayoutManager(new LinearLayoutManager(this));
